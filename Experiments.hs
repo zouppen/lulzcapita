@@ -9,7 +9,6 @@ import Nordnet
 -- |Parser tester, reads portfolio from file instead of CGI.
 testMe p f = do
   stuff <- readFile f -- Assumes UTF-8
-  case parse (p dummyInfo) "portfolio" (pack stuff) of
-    Left e -> putStrLn $ "broken: " ++ show e
-    Right a -> mapM_ (putStrLn.encode) a
+  parsed <- parsePortfolio (p dummyInfo) (pack stuff)
+  mapM_ (putStrLn.encode) parsed
   where dummyInfo = PortfolioInfo { pId = "1337", tmpFile = f }

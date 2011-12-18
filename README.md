@@ -5,18 +5,18 @@ show what they've got.
 
 More information coming later on...
 
-## Database scheme
+## Database schema
 
 The database contain documents with the following fields:
 
-* <tt>_id</tt>: The ID of the transaction, prefixed with bank id (like <tt>non_</tt>)
+* <tt>\_id</tt>: The ID of the transaction, prefixed with bank id (like <tt>non_</tt>)
 * <tt>portfolio</tt>: The portfolio ID, prefixed with bank id, like above
 * <tt>date</tt>: Date of transaction
 * <tt>type</tt>: Type of transaction. One of the following:
-  * account: Deposit or withdraw, depending of the sign of sum
-  * tax: Taxation.
-  * sale: Purchase or sale, depending of the sign of count
-  * income: Return of capital, dividents, interests
+  * <tt>account</tt>: Deposit or withdraw, depending of the sign of sum
+  * <tt>tax</tt>: Taxation.
+  * <tt>sale</tt>: Purchase or sale, depending of the sign of count
+  * <tt>income</tt>: Return of capital, dividents, interests
 * <tt>count</tt>: In case of sales, this contains the number of stock or 
   security sold. In case of purcase, this is positive and in case of sale
   this is negative.

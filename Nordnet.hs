@@ -9,8 +9,6 @@ import Control.Monad (liftM)
 import Text.JSON
 import Common
 
-type Record = JSObject JSValue
-
 nordnet :: PortfolioInfo -> Parser [Record]
 nordnet info = do
   -- Skipping head
@@ -42,14 +40,11 @@ record PortfolioInfo{..} = do
   field                 -- Instrumenttityyppi
   isin <- field         -- ISIN
   amount <- numberField -- Määrä
-  price <- numberField  -- Kurssi
+  field                 -- Kurssi
   field                 -- Korko
   field                 -- Maksut
   euros <- numberField  -- Summa
-  field                 -- Valuutta
-  field                 -- Hankinta-arvo
-  field                 -- Tulos
-  skipLine
+  skipLine -- There are some more fields, but nothing interesting.
   
   -- Defining transaction specific object.
   let (typ,showIsin,ta) = case taStr of

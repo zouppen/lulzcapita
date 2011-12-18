@@ -2,28 +2,33 @@ module Main where
 
 import Control.Monad (liftM,unless)
 import qualified Data.ByteString.Lazy as B
-import Data.Text.Lazy
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import qualified Data.Text.Lazy.IO as TI
+import Database.CouchDB
 import Network.FastCGI
+import Network.URI
+import System.Environment
 import System.IO
-import Text.JSON
-import Text.Parsec
 import Common
 import Nordnet
 
 main = do
-  runFastCGI tryPortfolioSink
-
--- |Runs FastCGI and outputs exceptions as internal server
--- errors. TODO more sophisticated messages?
-tryPortfolioSink :: CGI CGIResult
-tryPortfolioSink = catchCGI portfolioSink outputException
+  -- TODO Migrate to cmdargs when we more parameters than one. Now we
+  -- have very brutal commandline parser which dies on errors.
+  [dbStr] <- getArgs
+  let Just dbUri = parseURI dbStr
+  
+  -- Create connection
+  conn <- createCouchConnFromURI dbUri
+  
+  -- Runs FastCGI and outputs exceptions as internal server
+  -- errors. TODO more sophisticated messages?
+  runFastCGI $ catchCGI (portfolioSink conn) outputException
 
 -- |Does the actual parsing and pushing of results. Fails when
 -- something goes wrong.
-portfolioSink :: CGI CGIResult
-portfolioSink = do
+portfolioSink :: CouchConn -> CGI CGIResult
+portfolioSink conn = do
   -- Getting the stuff from a request
   id <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
   format <- requestHeader "PortfolioFormat" `orFail` "Portfolio format is not defined"
@@ -36,19 +41,17 @@ portfolioSink = do
     hClose h
     return f
 
+  -- Dummy access log.
+  liftIO $ appendFile "incoming.log" $ concat ["id ",id," format ",format,
+                                               "  file ",f,"\n"]
+
   -- Parser chooser
   parser <- case lookup format parsers of 
     Just x -> return x
     Nothing -> fail $ "Format of " ++ format ++ " is not supported"
 
   let info = PortfolioInfo { pId = id, tmpFile = f }
-
-  -- Parsing
-  portfolio <- case parse (parser info) "portfolio" raw of
-    Left e -> fail $ "Parsing of portfolio failed in " ++ show (errorPos e)
-    Right a -> return a 
-
-  liftIO $ appendFile "portfoliot.txt" $ show portfolio
+  liftIO $ parseAndSend conn (parser info) raw
 
   output "ok\r\n"
 
