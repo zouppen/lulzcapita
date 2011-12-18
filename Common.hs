@@ -23,5 +23,6 @@ parsePortfolio p raw =
     Left e -> fail $ "Parsing of portfolio failed in " ++ show (errorPos e)
     Right a -> return a
 
-sendPortfolio :: (Monad m) => CouchConn -> [Record] -> m ()
-sendPortfolio conn pf = return () -- TODO
+sendPortfolio :: CouchConn -> [Record] -> IO ()
+sendPortfolio conn pf = runCouchDBWith conn $ do
+  mapM_ (newDoc (db "lulzcapita")) pf
