@@ -1,4 +1,5 @@
-module Nordnet where
+{-# LANGUAGE RecordWildCards #-}
+module Nordnet (nordnet) where
 
 import Text.Parsec.Text.Lazy
 import Text.Parsec
@@ -6,17 +7,18 @@ import Data.Char (digitToInt)
 import Data.Maybe (catMaybes)
 import Control.Monad (liftM)
 import Text.JSON
+import Common
 
 type Record = JSObject JSValue
 
-nordnet :: Parser [Record]
-nordnet = do
+nordnet :: PortfolioInfo -> Parser [Record]
+nordnet info = do
   -- Skipping head
   skipMany newline
   string "ID"
   skipLine
   -- The thing
-  records <- many record
+  records <- many $ record info
   -- Skip tail
   skipMany newline
   eof
@@ -25,8 +27,8 @@ nordnet = do
 
 -- |Parses a record. Comments are in Finnish because the CSV from
 -- Nordnet has Finnish comments.
-record :: Parser Record
-record = do
+record :: PortfolioInfo -> Parser Record
+record PortfolioInfo{..} = do
   -- Stop if the line is empty.
   lookAhead $ satisfy (/= '\n')
   
@@ -40,7 +42,7 @@ record = do
   field                 -- Instrumenttityyppi
   isin <- field         -- ISIN
   amount <- numberField -- Määrä
-  field                 -- Kurssi
+  price <- numberField  -- Kurssi
   field                 -- Korko
   field                 -- Maksut
   euros <- numberField  -- Summa
@@ -48,9 +50,40 @@ record = do
   field                 -- Hankinta-arvo
   field                 -- Tulos
   skipLine
-  return $ toJSObject [("_id",showJSON id)
-                      ,("date",showJSON dateStr)
-                      ]
+  
+  -- Defining transaction specific object.
+  let (typ,showIsin,ta) = case taStr of
+        "TALLETUS"         -> ("account",False,Nothing)
+        "NOSTO"            -> ("account",False,Nothing)
+        "LÄHDEVERO"        -> ("tax",True,Nothing)
+        "ENNAKKOPIDÄTYS"   -> ("tax",True,Nothing)
+        "OSTO"             -> ("sale",True,Just ("count",showJSON amount))
+        "MYYNTI"           -> ("sale",True,Just ("count",showJSON (-amount)))
+        "TALLETUSKORKO"    -> ("income",True,Nothing)
+        "PÄÄOMAN PALAUTUS" -> ("income",True,Nothing)
+        "OSINKO"           -> ("income",True,Nothing)
+        -- Some "pathological" transactions:
+        -- Extra stocks (Nordnet welcome offer, bonus issue)
+        "JÄTTÖ SIIRTO"         -> ("sale",True,Just ("count",showJSON amount))
+        "RAHASTOANTI AP JÄTTÖ" -> ("sale",True,Just ("count",showJSON amount))
+        -- Transactions related to cancellation of dividents, etc.
+        "OSINGON PERUUTUS"     -> ("income",True,Nothing)
+        "PER ULK KUPONKIVERO"  -> ("income",True,Nothing)
+        -- Unknown events are logged, too.
+        a -> ("unknown",False,Just ("unsupported",showJSON a))
+        
+  return $ toJSObject $ catMaybes
+    [Just ("_id",showJSON $ "non_"++id)
+    ,Just ("portfolio", showJSON $ "non_"++pId)
+    ,Just ("original", showJSON tmpFile)
+    ,Just ("date",showJSON dateStr)
+    ,Just ("type",showJSON typ)
+    ,if showIsin then Just ("isin",showJSON isin) else Nothing
+    ,Just ("sum",showJSON euros)
+    ,ta
+    ]
+
+obj k v = (k,toJSObject v)
 
 field :: Parser String
 field = manyTill anyChar tab

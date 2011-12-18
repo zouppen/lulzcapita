@@ -5,6 +5,28 @@ show what they've got.
 
 More information coming later on...
 
+## Database scheme
+
+The database contain documents with the following fields:
+
+* <tt>_id</tt>: The ID of the transaction, prefixed with bank id (like <tt>non_</tt>)
+* <tt>portfolio</tt>: The portfolio ID, prefixed with bank id, like above
+* <tt>date</tt>: Date of transaction
+* <tt>type</tt>: Type of transaction. One of the following:
+  * account: Deposit or withdraw, depending of the sign of sum
+  * tax: Taxation.
+  * sale: Purchase or sale, depending of the sign of count
+  * income: Return of capital, dividents, interests
+* <tt>count</tt>: In case of sales, this contains the number of stock or 
+  security sold. In case of purcase, this is positive and in case of sale
+  this is negative.
+* <tt>isin</tt>: The ISIN of the stock in question.
+
+In database, taxation on account interest, dividents and sales have
+the type of "tax". In case of account taxation, "isin" field contains
+empty string, otherwise it contains the ISIN of that stock or security that
+has been taxated.
+
 ## Server configuration
 
 TODO nginx instructions

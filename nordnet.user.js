@@ -20,7 +20,7 @@ function sendToLulz(portfolio) {
 	headers: {
 	    "Content-Type": "text/plain; charset=UTF-8",
 	    "PortfolioFormat": "nordnet",
-	    "PortfolioID": "non"+portfolioId
+	    "PortfolioID": portfolioId
 	},
 	onload: function(result) {
 	    console.log("Synchronized to LulzCapita");
