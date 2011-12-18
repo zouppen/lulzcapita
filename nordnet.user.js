@@ -19,7 +19,7 @@ function sendToLulz(portfolio) {
 	data: portfolio,
 	headers: {
 	    "Content-Type": "text/plain; charset=UTF-8",
-	    "PortfolioFormat": "nordnet"
+	    "PortfolioFormat": "nordnet",
 	    "PortfolioID": "non"+portfolioId
 	},
 	onload: function(result) {
@@ -60,13 +60,11 @@ function lulzSync () {
 }
 
 // Adding a link and a listener on main page (in Finnish).
-
 var div = document.createElement("div");
 div.setAttribute("class", "section");
 var href = document.createElement("a");
 href.setAttribute("style", "cursor:pointer;");
 href.textContent = "Synkronoi salkkusi LulzCapitaan";
 href.addEventListener("click", lulzSync, false);
-
 div.appendChild(href);
 muut.appendChild(div);
