@@ -15,8 +15,8 @@ testMe p f = do
   where dummyInfo = PortfolioInfo { pId = "1337", tmpFile = f }
 
 -- |Database sending tester.
-sendMe p f = do
+sendMe p id f = do
   stuff <- readFile f -- Assumes UTF-8
   conn <- createCouchConn "localhost" 5984
   parseAndSend conn (p dummyInfo) (pack stuff)
-  where dummyInfo = PortfolioInfo { pId = "1337", tmpFile = f }
+  where dummyInfo = PortfolioInfo { pId = id, tmpFile = f }
