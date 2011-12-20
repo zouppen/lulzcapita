@@ -5,6 +5,7 @@ import Text.Parsec.Text.Lazy
 import Text.Parsec
 import Data.Char (digitToInt)
 import Data.Maybe (catMaybes)
+import Database.CouchDB
 import Control.Monad (liftM)
 import Text.JSON
 import Common
@@ -67,16 +68,15 @@ record PortfolioInfo{..} = do
         -- Unknown events are logged, too.
         a -> ("unknown",False,Just ("unsupported",showJSON a))
         
-  return $ toJSObject $ catMaybes
-    [Just ("_id",showJSON $ "non_"++id)
-    ,Just ("portfolio", showJSON $ "non_"++pId)
+  return $ ((doc $ "non_"++id),toJSObject $ catMaybes
+    [Just ("portfolio", showJSON $ "non_"++pId)
     ,Just ("original", showJSON tmpFile)
     ,Just ("date",showJSON dateStr)
     ,Just ("type",showJSON typ)
     ,if showIsin then Just ("isin",showJSON isin) else Nothing
     ,Just ("sum",showJSON euros)
     ,ta
-    ]
+    ])
 
 obj k v = (k,toJSObject v)
 
