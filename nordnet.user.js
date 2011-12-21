@@ -15,7 +15,7 @@ function sendToLulz(portfolio) {
     
     GM_xmlhttpRequest({
 	method: "POST",
-	url: "http://capita.lulz.fi/portfolio_sink",
+	url: "http://capita.lulz.fi/bin/portfolio",
 	data: portfolio,
 	headers: {
 	    "Content-Type": "text/plain; charset=UTF-8",
@@ -23,6 +23,7 @@ function sendToLulz(portfolio) {
 	    "PortfolioID": portfolioId
 	},
 	onload: function(result) {
+	    // TODO Check status code if not 200!
 	    console.log("Synchronized to LulzCapita");
 	    alert("Salkku synkronoitu LulzCapitaan onnistuneesti!");
 	},
@@ -32,7 +33,6 @@ function sendToLulz(portfolio) {
 		  result.statusText);
 	}
     });
-    //alert("Salkku lähetetään palvelimelle");
 }
 
 // Fetches data from Nordnet and sends it to the provided callback.
