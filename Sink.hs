@@ -1,7 +1,6 @@
 module Main where
 
 import Data.List (stripPrefix)
-import Database.CouchDB
 import Network.FastCGI
 import Network.URI
 import System.Environment
@@ -14,17 +13,14 @@ main = do
   [dbStr] <- getArgs
   let Just dbUri = parseURI dbStr
   
-  -- Create connection
-  conn <- createCouchConnFromURI dbUri
-  
   -- Runs FastCGI and outputs exceptions as internal server
   -- errors. TODO more sophisticated messages?
-  runFastCGI $ catchCGI (requestPicker conn) outputException
+  runFastCGI $ catchCGI (requestPicker dbUri) outputException
 
-requestPicker :: CouchConn -> CGI CGIResult
-requestPicker conn = do
+requestPicker :: URI -> CGI CGIResult
+requestPicker dbUri = do
   path <- scriptName
   case stripPrefix cgiBase path of
-    Just "portfolio" -> portfolioSink conn
+    Just "portfolio" -> portfolioSink dbUri
     Just "register" -> output "registering is not supported yet\r\n"
     _ -> outputError 404 "Interface not found" ["Interface "++path++" does not exist"]

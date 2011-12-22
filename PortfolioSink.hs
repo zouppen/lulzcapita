@@ -8,6 +8,7 @@ import Data.Text.Encoding (decodeUtf8)
 import qualified Data.Text.IO as TI
 import Database.CouchDB
 import Network.FastCGI
+import Network.URI
 import System.IO
 import Text.Parsec
 import Text.Parsec.Text
@@ -16,8 +17,8 @@ import Nordnet
 
 -- |Does the actual parsing and pushing of results. Fails when
 -- something goes wrong.
-portfolioSink :: CouchConn -> CGI CGIResult
-portfolioSink conn = do
+portfolioSink :: URI -> CGI CGIResult
+portfolioSink dbUri = do
   -- Getting the stuff from a request. Making Text strict a bit ugly
   -- way because CGI library is quite poor.
   id <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
@@ -41,7 +42,7 @@ portfolioSink conn = do
     Nothing -> fail $ "Format of " ++ format ++ " is not supported"
 
   let info = PortfolioInfo { pId = id, tmpFile = f }
-  liftIO $ parseAndSend conn (parser info) raw
+  liftIO $ parseAndSend dbUri (parser info) raw
 
   output "ok\r\n"
 
@@ -49,8 +50,8 @@ portfolioSink conn = do
 parsers = [("nordnet",nordnet)]
 
 -- |Parses and sends the portfolio
-parseAndSend :: CouchConn -> Parser [Record] -> Text -> IO ()
-parseAndSend conn p raw = parsePortfolio p raw >>= sendPortfolio conn
+parseAndSend :: URI -> Parser [Record] -> Text -> IO ()
+parseAndSend uri p raw = parsePortfolio p raw >>= sendPortfolio uri
 
 -- |Just parses and fails monadically
 parsePortfolio :: (Monad m) => Parser [Record] -> Text -> m [Record]
@@ -59,9 +60,8 @@ parsePortfolio p raw =
     Left e -> fail $ "Parsing of portfolio failed in " ++ show (errorPos e)
     Right a -> return a
 
-sendPortfolio :: CouchConn -> [Record] -> IO ()
-sendPortfolio conn pf = runCouchDBWith conn $ do
-  mapM_ maybeUpdate pf
+sendPortfolio :: URI -> [Record] -> IO ()
+sendPortfolio uri pf = runCouchDBURI uri $ mapM_ maybeUpdate pf
   where
     maybeUpdate (doc,json) = do
       ret <- newNamedDoc portfolioDb doc json
