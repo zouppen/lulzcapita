@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Nordnet (nordnet) where
 
-import Text.Parsec.Text.Lazy
+import Text.Parsec.Text
 import Text.Parsec
 import Data.Char (digitToInt)
 import Data.Maybe (catMaybes)
@@ -68,7 +68,7 @@ record PortfolioInfo{..} = do
         -- Unknown events are logged, too.
         a -> ("unknown",False,Just ("unsupported",showJSON a))
         
-  return $ ((doc $ "non_"++id),toJSObject $ catMaybes
+  return ((doc $ "non_"++id),toJSObject $ catMaybes
     [Just ("portfolio", showJSON $ "non_"++pId)
     ,Just ("original", showJSON tmpFile)
     ,Just ("date",showJSON dateStr)

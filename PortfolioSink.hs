@@ -1,14 +1,16 @@
 module PortfolioSink where
 
 import Control.Monad (liftM)
-import Data.Text.Lazy (Text)
-import Data.Text.Lazy.Encoding (decodeUtf8)
-import qualified Data.Text.Lazy.IO as TI
+import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString as BS
+import Data.Text (Text)
+import Data.Text.Encoding (decodeUtf8)
+import qualified Data.Text.IO as TI
 import Database.CouchDB
 import Network.FastCGI
 import System.IO
 import Text.Parsec
-import Text.Parsec.Text.Lazy
+import Text.Parsec.Text
 import Common
 import Nordnet
 
@@ -16,10 +18,11 @@ import Nordnet
 -- something goes wrong.
 portfolioSink :: CouchConn -> CGI CGIResult
 portfolioSink conn = do
-  -- Getting the stuff from a request
+  -- Getting the stuff from a request. Making Text strict a bit ugly
+  -- way because CGI library is quite poor.
   id <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
   format <- requestHeader "PortfolioFormat" `orFail` "Portfolio format is not defined"
-  raw <- liftM decodeUtf8 getBodyFPS
+  raw <- liftM (decodeUtf8 . BS.concat . B.toChunks) getBodyFPS
   
   -- Get temporary file and write the portfolio on disk for debugging.
   f <- liftIO $ do 

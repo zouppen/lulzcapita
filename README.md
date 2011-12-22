@@ -43,7 +43,7 @@ Install some packages:
 
 Then, compile the binary:
 
-    ghc --make -o sink PortfolioSink.hs
+    ghc --make -o sink Sink.hs
 
 ## Running
 
