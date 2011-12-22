@@ -9,10 +9,30 @@ var portfolioId = document.evaluate("//div/@portfolio", document, null, XPathRes
 
 var muut = document.evaluate("//div[div/@class='subBar']", document, null, XPathResult.ANY_TYPE, null).iterateNext();
 
+// Error reporter
+function check(msg,callback) {
+    "use strict";
+    return function(result) {
+	if (callback !== null && result.status === 200) {
+	    // Everything good.
+	    callback(result.responseText);
+	} else {
+	    // Report issues.
+	    var e = msg + ": " + result.statusText;
+	    console.log(e);
+	    alert(e);
+	}
+    };
+}
+
+function goodSync(a) {
+    "use strict";
+    alert("Salkku synkronoitu LulzCapitaan onnistuneesti!");
+}
+
 // Sends provided portfolio string to LulzCapita
 function sendToLulz(portfolio) {
-    "use strict";
-    
+    "use strict";    
     GM_xmlhttpRequest({
 	method: "POST",
 	url: "http://capita.lulz.fi/bin/portfolio",
@@ -22,41 +42,21 @@ function sendToLulz(portfolio) {
 	    "PortfolioFormat": "nordnet",
 	    "PortfolioID": portfolioId
 	},
-	onload: function(result) {
-	    // TODO Check status code if not 200!
-	    console.log("Synchronized to LulzCapita");
-	    alert("Salkku synkronoitu LulzCapitaan onnistuneesti!");
-	},
-	onerror: function(result) {
-	    console.log("Failed to sync to LulzCapita");
-	    alert("Tapahtumien lähettäminen tietokantaan epäonnistui: "+
-		  result.statusText);
-	}
+	onload: check("Tapahtumien lähettäminen tietokantaan epäonnistui",goodSync),
+	onerror: check("Tapahtumien lähettäminen tietokantaan epäonnistui")
     });
 }
 
 // Fetches data from Nordnet and sends it to the provided callback.
-function readFromNordnet(callback) {
+function readAndSync() {
     "use strict";
     GM_xmlhttpRequest({
 	method: "GET",
 	url: "/mux/laddaner/transaktionsfil.html?year=all&month=all&trtyp=all&vp=all&curr=all&sorteringsordning=fallande&sortera=datum&startperiod=01-01-2000&endperiod=01-01-2020",
 	overrideMimeType: "text/plain; charset=ISO-8859-1",
-	onload: function(result) {
-	    console.log("Read portfolio successfully from Nordnet");
-	    callback(result.responseText);
-	},
-	onerror: function(result) {
-	    console.log("Failed to read portfolio from Nordnet");
-	    alert("Tapahtumien lukeminen Nordnetistä epäonnistui: " +
-		  result.statusText);
-	}
+	onload: check("Tapahtumien lukeminen epäonnistui",sendToLulz),
+	onerror: check("Tapahtumien lukeminen epäonnistui")
     });
-}
-
-function lulzSync () {
-    "use strict";
-    readFromNordnet(sendToLulz);
 }
 
 // Adding a link and a listener on main page (in Finnish).
@@ -65,6 +65,6 @@ div.setAttribute("class", "section");
 var href = document.createElement("a");
 href.setAttribute("style", "cursor:pointer;");
 href.textContent = "Synkronoi salkkusi LulzCapitaan";
-href.addEventListener("click", lulzSync, false);
+href.addEventListener("click", readAndSync, false);
 div.appendChild(href);
 muut.appendChild(div);
