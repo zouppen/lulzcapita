@@ -6,6 +6,7 @@ import Network.URI
 import System.Environment
 import Common
 import PortfolioSink
+import User
 
 main = do
   -- TODO Migrate to cmdargs when we more parameters than one. Now we
@@ -22,5 +23,6 @@ requestPicker dbUri = do
   path <- scriptName
   case stripPrefix cgiBase path of
     Just "portfolio" -> portfolioSink dbUri
+    Just "userinfo" -> userInfo dbUri
     Just "register" -> output "registering is not supported yet\r\n"
     _ -> outputError 404 "Interface not found" ["Interface "++path++" does not exist"]
