@@ -68,8 +68,8 @@ record PortfolioInfo{..} = do
         -- Unknown events are logged, too.
         a -> ("unknown",False,Just ("unsupported",showJSON a))
         
-  return ((doc $ "non_"++id),toJSObject $ catMaybes
-    [Just ("portfolio", showJSON $ "non_"++pId)
+  return ((doc $ hash ["nordnet",pId,id]),toJSObject $ catMaybes
+    [Just ("portfolio", showJSON $ hash ["nordnet",pId])
     ,Just ("original", showJSON tmpFile)
     ,Just ("date",showJSON dateStr)
     ,Just ("type",showJSON typ)

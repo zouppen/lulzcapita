@@ -10,9 +10,8 @@ userInfo :: URI -> CGI CGIResult
 userInfo uri = do
   id <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
   format <- requestHeader "PortfolioFormat" `orFail` "Portfolio format is not defined"
-  prefix <- return (lookup format prefixes) `orFail` "Portfolio format is unknown"
   
-  json <- liftIO $ runCouchDBURI uri $ readDB $ prefix ++ id
+  json <- liftIO $ runCouchDBURI uri $ readDB $ hash [format,id]
   output $ encode json
 
 readDB :: String -> CouchMonad (JSObject JSValue)
@@ -29,6 +28,3 @@ readDB portfolio = do
         [] -> showJSON "2000-01-01"  -- Start of the time
 
   return $ toJSObject [("last",timestamp)]
-
--- Portfolio format to prefix mapping.
-prefixes = [("nordnet","non_")]

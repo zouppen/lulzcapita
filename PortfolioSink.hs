@@ -33,8 +33,8 @@ portfolioSink dbUri = do
     return f
 
   -- Dummy access log.
-  liftIO $ appendFile "portfolio.log" $ concat ["id ",id," format ",format,
-                                                " file ",f,"\n"]
+  liftIO $ appendFile "portfolio.log" $ concat ["id ",id," format ",format
+                                               ," file ",f,"\n"]
 
   -- Parser chooser
   parser <- case lookup format parsers of 
