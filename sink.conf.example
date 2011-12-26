@@ -1,0 +1,19 @@
+# Configuration for LulzCapita.
+
+[secret]
+# This section defines CouchDB database URI (containing possible
+# credentials) and salt value for banking ID obfuscation.
+db = http://user:password@127.0.0.1:5984
+salt = change me
+
+# You may leave the following options as-is, if you don't need to do
+# any weird things.
+
+[web]
+# Location of this service in virtual server configuration.
+base_url = /bin/
+
+[database_names]
+# Names of CouchDB databases.
+portfolio = capita-portfolio
+nick = capita-nick

@@ -1,23 +1,25 @@
 module User where
 
+import Data.ConfigFile (ConfigParser)
 import Database.CouchDB
 import Network.FastCGI
-import Network.URI
 import Text.JSON
 import Common
 
-userInfo :: URI -> CGI CGIResult
-userInfo uri = do
+userInfo :: ConfigParser -> CGI CGIResult
+userInfo conf = do
   id <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
   format <- requestHeader "PortfolioFormat" `orFail` "Portfolio format is not defined"
   
-  json <- liftIO $ runCouchDBURI uri $ readDB $ hash [format,id]
+  json <- liftIO $ runCouchDBURI (peek conf "secret.db") $
+          readDB conf $ hash conf [format,id]
   output $ encode json
 
-readDB :: String -> CouchMonad (JSObject JSValue)
-readDB portfolio = do
+readDB :: ConfigParser -> String -> CouchMonad (JSObject JSValue)
+readDB conf portfolio = do
   -- Should return only one row.
-  timeRaw <- queryView portfolioDb (doc "couchapp") (doc "lastsync")
+  timeRaw <- queryView (peek conf "database_names.portfolio")
+             (doc "couchapp") (doc "lastsync")
              [("key",showJSON portfolio)
              ,("group",showJSON True)
              ]

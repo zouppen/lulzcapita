@@ -3,12 +3,12 @@ module PortfolioSink where
 import Control.Monad (liftM)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString as BS
+import Data.ConfigFile (ConfigParser)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
 import qualified Data.Text.IO as TI
 import Database.CouchDB
 import Network.FastCGI
-import Network.URI
 import System.IO
 import Text.Parsec
 import Text.Parsec.Text
@@ -17,8 +17,8 @@ import Nordnet
 
 -- |Does the actual parsing and pushing of results. Fails when
 -- something goes wrong.
-portfolioSink :: URI -> CGI CGIResult
-portfolioSink dbUri = do
+portfolioSink :: ConfigParser -> CGI CGIResult
+portfolioSink conf = do
   -- Getting the stuff from a request. Making Text strict a bit ugly
   -- way because CGI library is quite poor.
   id <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
@@ -41,8 +41,8 @@ portfolioSink dbUri = do
     Just x -> return x
     Nothing -> fail $ "Format of " ++ format ++ " is not supported"
 
-  let info = PortfolioInfo { pId = id, tmpFile = f }
-  liftIO $ parseAndSend dbUri (parser info) raw
+  let info = PortfolioInfo { pId = id, tmpFile = f, conf = conf }
+  liftIO $ parseAndSend conf (parser info) raw
 
   output "ok\r\n"
 
@@ -50,8 +50,8 @@ portfolioSink dbUri = do
 parsers = [("nordnet",nordnet)]
 
 -- |Parses and sends the portfolio
-parseAndSend :: URI -> Parser [Record] -> Text -> IO ()
-parseAndSend uri p raw = parsePortfolio p raw >>= sendPortfolio uri
+parseAndSend :: ConfigParser -> Parser [Record] -> Text -> IO ()
+parseAndSend conf p raw = parsePortfolio p raw >>= sendPortfolio conf
 
 -- |Just parses and fails monadically
 parsePortfolio :: (Monad m) => Parser [Record] -> Text -> m [Record]
@@ -60,8 +60,9 @@ parsePortfolio p raw =
     Left e -> fail $ "Parsing of portfolio failed in " ++ show (errorPos e)
     Right a -> return a
 
-sendPortfolio :: URI -> [Record] -> IO ()
-sendPortfolio uri pf = runCouchDBURI uri $ mapM_ maybeUpdate pf
+sendPortfolio :: ConfigParser -> [Record] -> IO ()
+sendPortfolio conf pf = runCouchDBURI (peek conf "secret.db") $
+                        mapM_ maybeUpdate pf
   where
     maybeUpdate (doc,json) = do
       ret <- newNamedDoc portfolioDb doc json
@@ -71,3 +72,4 @@ sendPortfolio uri pf = runCouchDBURI uri $ mapM_ maybeUpdate pf
       case ret of
         Left _ -> getAndUpdateDoc portfolioDb doc (return . (const json))
         Right _ -> return Nothing -- Not interested
+    portfolioDb = (peek conf "database_names.portfolio")

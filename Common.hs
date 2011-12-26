@@ -1,24 +1,34 @@
 module Common where
 
-import Prelude hiding (concat)
-import Data.ByteString.Lazy.Char8 (intercalate,pack,singleton)
+import Data.ByteString.Lazy.Char8 (ByteString,intercalate,pack,singleton)
+import Data.ConfigFile (Get_C, ConfigParser, SectionSpec, OptionSpec, get)
 import Data.Digest.Pure.SHA
+import Data.Either.Utils (forceEither)
 import Database.CouchDB
 import Text.JSON
+import Network.URI (URI,parseURI)
 
--- Base URL for FastCGI
-cgiBase = "/bin/"
+-- Adding ability to parse URIs
+instance Get_C URI where
+  get a b c = do 
+    s <- get a b c
+    case parseURI s of
+      Just x -> return x
+      Nothing -> fail "Not a valid URI"
 
--- Database names
-portfolioDb = db "capita-portfolio"
+-- ByteString is parsed like string but packed.
+instance Get_C ByteString where
+  get a b c = get a b c >>= return . pack
 
--- |Server secret value for hashing the original IDs. A kind of salt value.
-codingKey = pack "kissa"
+-- Database name is like string, but wrapped.
+instance Get_C DB where
+  get a b c = get a b c >>= return . db
 
 -- Some information to pass to parser.
 data PortfolioInfo = PortfolioInfo { pId     :: String
                                    , tmpFile :: FilePath
-                                   } deriving (Show)
+                                   , conf    :: ConfigParser
+                                   }
 
 type Record = (Doc,JSObject JSValue)
 
@@ -32,6 +42,13 @@ orFail act failMsg = act >>= maybe (fail failMsg) return
 -- avoids collisions with a cryptographic hash, which is truncated to
 -- 16 bytes (32 hexadecimal digits) to make it look like CouchDB
 -- generated ID.
-hash :: [String] -> String
-hash names = take 32 $ showDigest $ sha256 $
-             intercalate (singleton '\NUL') (codingKey:map pack names)
+hash :: ConfigParser -> [String] -> String
+hash conf names = take 32 $ showDigest $ sha256 $
+                  intercalate (singleton '\NUL')
+                  (peek conf "secret.salt":map pack names)
+
+-- |Just unwraps the value in Either and allows specifying config
+-- |entry with dot notation (secret.db)
+peek :: (Get_C a) => ConfigParser -> String -> a
+peek conf combi = forceEither $ get conf section option
+  where (section,(_:option)) = span (/='.') combi
