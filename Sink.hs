@@ -1,6 +1,6 @@
 module Main where
 
-import Control.Monad (liftM)
+import Control.Monad (liftM, when)
 import Data.ConfigFile
 import Data.Either.Utils
 import Data.List (stripPrefix)
@@ -14,7 +14,9 @@ main = do
   -- TODO Add some config file validation and allow specifying config
   -- file location. Also, check the values for sanity before going forward.
   conf <- liftM forceEither $ readfile emptyCP "sink.conf"
-  
+  when (peek conf "secret.salt" == "change me") $
+    fail "Please generate secret.salt with pwgen or similar tool."
+
   -- Runs FastCGI and outputs exceptions as internal server
   -- errors. TODO more sophisticated messages?
   runFastCGI $ catchCGI (requestPicker conf) outputException
