@@ -10,6 +10,7 @@ import qualified Data.Text.IO as TI
 import Database.CouchDB
 import Network.FastCGI
 import System.IO
+import Text.JSON
 import Text.Parsec
 import Text.Parsec.Text
 import Common
@@ -19,10 +20,9 @@ import Nordnet
 -- something goes wrong.
 portfolioSink :: ConfigParser -> CGI CGIResult
 portfolioSink conf = do
-  -- Getting the stuff from a request. Making Text strict a bit ugly
-  -- way because CGI library is quite poor.
-  id <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
-  format <- requestHeader "PortfolioFormat" `orFail` "Portfolio format is not defined"
+  -- Gets request data. Making Text strict a bit ugly way because CGI
+  -- library is quite poor.
+  info <- getPortfolioHeaders conf
   raw <- liftM (decodeUtf8 . BS.concat . B.toChunks) getBodyFPS
   
   -- Get temporary file and write the portfolio on disk for debugging.
@@ -33,25 +33,35 @@ portfolioSink conf = do
     return f
 
   -- Dummy access log.
-  liftIO $ appendFile "portfolio.log" $ concat ["id ",id," format ",format
+  liftIO $ appendFile "portfolio.log" $ concat ["id ",pId info
+                                               ," format ",format info
                                                ," file ",f,"\n"]
+  
+  -- Add some useful information to the documents.
+  let extra = [ field "table" "portfolio"        -- Type of content
+              , field "portfolio" (hash info []) -- Portfolio ID hash
+              , field "original" f               -- Original file
+              ]
 
-  -- Parser chooser
-  parser <- case lookup format parsers of 
+  -- Parser chooser.
+  parser <- case lookup (format info) parsers of 
     Just x -> return x
-    Nothing -> fail $ "Format of " ++ format ++ " is not supported"
+    Nothing -> fail $ "Format of " ++ format info ++ " is not supported"
 
-  let info = PortfolioInfo { pId = id, tmpFile = f, conf = conf }
-  liftIO $ parseAndSend conf (parser info) raw
+  -- Parse the portfolio.
+  parsed <- liftIO $ parsePortfolio (parser info extra) raw
+  
+  -- Send the portfolio
+  liftIO $ sendPortfolio conf parsed
 
+  -- Write just OK, it is never actually read.
   output "ok\r\n"
 
+field :: (JSON a) => String -> a -> (String,JSValue)
+field k v = (k,showJSON v)
+  
 -- |Lookup table for parsers.
 parsers = [("nordnet",nordnet)]
-
--- |Parses and sends the portfolio
-parseAndSend :: ConfigParser -> Parser [Record] -> Text -> IO ()
-parseAndSend conf p raw = parsePortfolio p raw >>= sendPortfolio conf
 
 -- |Just parses and fails monadically
 parsePortfolio :: (Monad m) => Parser [Record] -> Text -> m [Record]
@@ -61,15 +71,15 @@ parsePortfolio p raw =
     Right a -> return a
 
 sendPortfolio :: ConfigParser -> [Record] -> IO ()
-sendPortfolio conf pf = runCouchDBURI (peek conf "secret.db") $
+sendPortfolio conf pf = runCouchDBURI (peek conf "secret.db_uri") $
                         mapM_ maybeUpdate pf
   where
     maybeUpdate (doc,json) = do
-      ret <- newNamedDoc portfolioDb doc json
+      ret <- newNamedDoc dbName doc json
       -- This may fail but it's not very probable. Conflight requires
       -- two simultanous portofolio updates when it's ok anyway to 
       -- ignore the other anyway.
       case ret of
-        Left _ -> getAndUpdateDoc portfolioDb doc (return . (const json))
-        Right _ -> return Nothing -- Not interested
-    portfolioDb = (peek conf "database_names.portfolio")
+        Left _ -> getAndUpdateDoc dbName doc (return . (const json))
+        Right _ -> return Nothing -- Succeeded in newNamedDoc
+    dbName = (peek conf "location.db")

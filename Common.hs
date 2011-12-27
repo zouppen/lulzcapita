@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Common where
 
 import Data.ByteString.Lazy.Char8 (ByteString,intercalate,pack,singleton)
@@ -6,6 +7,7 @@ import Data.Digest.Pure.SHA
 import Data.Either.Utils (forceEither)
 import Database.CouchDB
 import Text.JSON
+import Network.FastCGI
 import Network.URI (URI,parseURI)
 
 -- Adding ability to parse URIs
@@ -25,12 +27,23 @@ instance Get_C DB where
   get a b c = get a b c >>= return . db
 
 -- Some information to pass to parser.
-data PortfolioInfo = PortfolioInfo { pId     :: String
-                                   , tmpFile :: FilePath
-                                   , conf    :: ConfigParser
+data PortfolioInfo = PortfolioInfo { pId    :: String
+                                   , format :: String
+                                   , hash   :: [String] -> String
+                                   , conf   :: ConfigParser
                                    }
 
 type Record = (Doc,JSObject JSValue)
+type ExtraFields = [(String,JSValue)]
+
+-- |Digs portfolio information from FastCGI request.
+getPortfolioHeaders :: ConfigParser -> CGI PortfolioInfo
+getPortfolioHeaders conf = do
+  -- Getting the stuff from a request. 
+  pId <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
+  format <- requestHeader "PortfolioFormat" `orFail` "Portfolio format is not defined"
+  let hash = \x -> hashGen conf (format:pId:x)
+  return $ PortfolioInfo {..}
 
 -- |Shorthand for failing when something is not defined.
 orFail :: (Monad m) => m (Maybe a) -> String -> m a
@@ -42,10 +55,10 @@ orFail act failMsg = act >>= maybe (fail failMsg) return
 -- avoids collisions with a cryptographic hash, which is truncated to
 -- 16 bytes (32 hexadecimal digits) to make it look like CouchDB
 -- generated ID.
-hash :: ConfigParser -> [String] -> String
-hash conf names = take 32 $ showDigest $ sha256 $
-                  intercalate (singleton '\NUL')
-                  (peek conf "secret.salt":map pack names)
+hashGen :: ConfigParser -> [String] -> String
+hashGen conf names = take 32 $ showDigest $ sha256 $
+                     intercalate (singleton '\NUL')
+                     (peek conf "secret.salt":map pack names)
 
 -- |Just unwraps the value in Either and allows specifying config
 -- |entry with dot notation (secret.db)

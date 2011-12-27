@@ -24,7 +24,7 @@ main = do
 requestPicker :: ConfigParser -> CGI CGIResult
 requestPicker conf = do
   path <- scriptName
-  case stripPrefix (peek conf "web.base_url") path of
+  case stripPrefix (peek conf "location.base_url") path of
     Just "portfolio" -> portfolioSink conf
     Just "userinfo" -> userInfo conf
     Just "register" -> output "registering is not supported yet\r\n"

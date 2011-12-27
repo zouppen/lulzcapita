@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module User where
 
 import Data.ConfigFile (ConfigParser)
@@ -8,21 +9,18 @@ import Common
 
 userInfo :: ConfigParser -> CGI CGIResult
 userInfo conf = do
-  id <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
-  format <- requestHeader "PortfolioFormat" `orFail` "Portfolio format is not defined"
-  
-  json <- liftIO $ runCouchDBURI (peek conf "secret.db") $
-          readDB conf $ hash conf [format,id]
+  info <- getPortfolioHeaders conf 
+  json <- liftIO $ runCouchDBURI (peek conf "secret.db") $ readDB info
   output $ encode json
 
 -- |Extracts the information from databases. The portfolio parameter
 -- should be hashed.
-readDB :: ConfigParser -> String -> CouchMonad (JSObject JSValue)
-readDB conf portfolio = do
+readDB :: PortfolioInfo -> CouchMonad (JSObject JSValue)
+readDB PortfolioInfo{..} = do
   -- Should return only one row.
-  timeRaw <- queryView (peek conf "database_names.portfolio")
+  timeRaw <- queryView (peek conf "location.db")
              (doc "couchapp") (doc "lastsync")
-             [("key",showJSON portfolio)
+             [("key",jsonHash)
              ,("group",showJSON True)
              ]
 
@@ -34,9 +32,9 @@ readDB conf portfolio = do
   -- Get nick of that user.
   userRaw <- queryView (peek conf "database_names.user")
              (doc "couchapp") (doc "portfolio")
-             [("key",showJSON portfolio)]
+             [("key",jsonHash)]
 
-  logCGI $ show portfolio ++ " " ++ show userRaw -- Miksei löydy....
+  logCGI $ show jsonHash ++ " " ++ show userRaw -- Miksei löydy....
 
   -- If there is some data, return it, otherwise the default.
   userDoc <- case userRaw :: [(Doc,JSValue)] of
@@ -51,3 +49,5 @@ readDB conf portfolio = do
   return $ toJSObject [("last",timestamp)
                       ,("user",userjson)
                       ]
+
+  where jsonHash = showJSON $ hash []

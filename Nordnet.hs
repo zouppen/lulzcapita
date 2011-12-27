@@ -10,14 +10,14 @@ import Control.Monad (liftM)
 import Text.JSON
 import Common
 
-nordnet :: PortfolioInfo -> Parser [Record]
-nordnet info = do
+nordnet :: PortfolioInfo -> ExtraFields -> Parser [Record]
+nordnet info extra = do
   -- Skipping head
   skipMany newline
   string "ID"
   skipLine
   -- The thing
-  records <- many $ record info
+  records <- many $ record info extra
   -- Skip tail
   skipMany newline
   eof
@@ -26,8 +26,8 @@ nordnet info = do
 
 -- |Parses a record. Comments are in Finnish because the CSV from
 -- Nordnet has Finnish comments.
-record :: PortfolioInfo -> Parser Record
-record PortfolioInfo{..} = do
+record :: PortfolioInfo -> ExtraFields -> Parser Record
+record PortfolioInfo{..} extra = do
   -- Stop if the line is empty.
   lookAhead $ satisfy (/= '\n')
   
@@ -68,10 +68,8 @@ record PortfolioInfo{..} = do
         -- Unknown events are logged, too.
         a -> ("unknown",False,Just ("unsupported",showJSON a))
         
-  return ((doc $ hash conf ["nordnet",pId,id]),toJSObject $ catMaybes
-    [Just ("portfolio", showJSON $ hash conf ["nordnet",pId])
-    ,Just ("original", showJSON tmpFile)
-    ,Just ("date",showJSON dateStr)
+  return ((doc $ hash [id]),toJSObject $ extra ++ catMaybes
+    [Just ("date",showJSON dateStr)
     ,Just ("type",showJSON typ)
     ,if showIsin then Just ("isin",showJSON isin) else Nothing
     ,Just ("sum",showJSON euros)
