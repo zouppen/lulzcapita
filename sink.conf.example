@@ -16,4 +16,4 @@ base_url = /bin/
 [database_names]
 # Names of CouchDB databases.
 portfolio = capita-portfolio
-nick = capita-nick
+user = capita-user
