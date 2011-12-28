@@ -51,11 +51,11 @@ record PortfolioInfo{..} extra = do
   let (typ,showIsin,ta) = case taStr of
         "TALLETUS"         -> ("account",False,Nothing)
         "NOSTO"            -> ("account",False,Nothing)
-        "LÄHDEVERO"        -> ("tax",True,Nothing)
-        "ENNAKKOPIDÄTYS"   -> ("tax",True,Nothing)
+        "LÄHDEVERO"        -> ("tax",False,Nothing) -- Tax of savings interest.
+        "ENNAKKOPIDÄTYS"   -> ("tax",True,Nothing)  -- Tax of dividents.
         "OSTO"             -> ("sale",True,Just ("count",showJSON amount))
         "MYYNTI"           -> ("sale",True,Just ("count",showJSON (-amount)))
-        "TALLETUSKORKO"    -> ("income",True,Nothing)
+        "TALLETUSKORKO"    -> ("income",False,Nothing)
         "PÄÄOMAN PALAUTUS" -> ("income",True,Nothing)
         "OSINKO"           -> ("income",True,Nothing)
         -- Some "pathological" transactions:

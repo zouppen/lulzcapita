@@ -7,7 +7,6 @@ import Data.Digest.Pure.SHA
 import Data.Either.Utils (forceEither)
 import Database.CouchDB
 import Text.JSON
-import Network.FastCGI
 import Network.URI (URI,parseURI)
 
 -- Adding ability to parse URIs
@@ -35,15 +34,6 @@ data PortfolioInfo = PortfolioInfo { pId    :: String
 
 type Record = (Doc,JSObject JSValue)
 type ExtraFields = [(String,JSValue)]
-
--- |Digs portfolio information from FastCGI request.
-getPortfolioHeaders :: ConfigParser -> CGI PortfolioInfo
-getPortfolioHeaders conf = do
-  -- Getting the stuff from a request. 
-  pId <- requestHeader "PortfolioID" `orFail` "Portfolio ID is not defined"
-  format <- requestHeader "PortfolioFormat" `orFail` "Portfolio format is not defined"
-  let hash = \x -> hashGen conf (format:pId:x)
-  return $ PortfolioInfo {..}
 
 -- |Shorthand for failing when something is not defined.
 orFail :: (Monad m) => m (Maybe a) -> String -> m a

@@ -14,17 +14,21 @@ import Text.JSON
 import Text.Parsec
 import Text.Parsec.Text
 import Common
+import DatabaseTools
 import Nordnet
 
 -- |Does the actual parsing and pushing of results. Fails when
 -- something goes wrong.
 portfolioSink :: ConfigParser -> CGI CGIResult
 portfolioSink conf = do
-  -- Gets request data. Making Text strict a bit ugly way because CGI
-  -- library is quite poor.
+  -- Gets request data. 
   info <- getPortfolioHeaders conf
+  -- Making Text strict to improve performance.
   raw <- liftM (decodeUtf8 . BS.concat . B.toChunks) getBodyFPS
-  
+  -- Get user ID.
+  userID <- liftIO $ lulzCouch conf $ 
+            getUserId info `orFail` "Your portfolio ID is not registered"
+
   -- Get temporary file and write the portfolio on disk for debugging.
   f <- liftIO $ do 
     (f,h) <- openBinaryTempFile "portfolio_log" ".csv"
@@ -38,18 +42,17 @@ portfolioSink conf = do
                                                ," file ",f,"\n"]
   
   -- Add some useful information to the documents.
-  let extra = [ field "table" "portfolio"        -- Type of content
-              , field "portfolio" (hash info []) -- Portfolio ID hash
-              , field "original" f               -- Original file
+  let extra = [ field "table" "portfolio"  -- Type of content
+              , field "user" userID        -- Portfolio ID hash
+              , field "original" f         -- Original file
               ]
 
   -- Parser chooser.
-  parser <- case lookup (format info) parsers of 
-    Just x -> return x
-    Nothing -> fail $ "Format of " ++ format info ++ " is not supported"
+  p <- (return $ lookup (format info) parsers)
+       `orFail` "Portfolio type is not supported"
 
   -- Parse the portfolio.
-  parsed <- liftIO $ parsePortfolio (parser info extra) raw
+  parsed <- liftIO $ parsePortfolio (p info extra) raw
   
   -- Send the portfolio
   liftIO $ sendPortfolio conf parsed
@@ -71,13 +74,12 @@ parsePortfolio p raw =
     Right a -> return a
 
 sendPortfolio :: ConfigParser -> [Record] -> IO ()
-sendPortfolio conf pf = runCouchDBURI (peek conf "secret.db_uri") $
-                        mapM_ maybeUpdate pf
+sendPortfolio conf pf = lulzCouch conf $ mapM_ maybeUpdate pf
   where
     maybeUpdate (doc,json) = do
       ret <- newNamedDoc dbName doc json
       -- This may fail but it's not very probable. Conflight requires
-      -- two simultanous portofolio updates when it's ok anyway to 
+      -- two simultaneous portofolio updates when it's ok anyway to
       -- ignore the other anyway.
       case ret of
         Left _ -> getAndUpdateDoc dbName doc (return . (const json))

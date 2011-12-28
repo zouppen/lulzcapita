@@ -6,6 +6,7 @@ import Database.CouchDB
 import Network.FastCGI
 import Text.JSON
 import Common
+import DatabaseTools
 
 userInfo :: ConfigParser -> CGI CGIResult
 userInfo conf = do
