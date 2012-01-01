@@ -51,10 +51,8 @@ portfolioSink conf = do
   p <- (return $ lookup (format info) parsers)
        `orFail` "Portfolio type is not supported"
 
-  -- Parse the portfolio.
+  -- Parse and send the portfolio.
   parsed <- liftIO $ parsePortfolio (p info extra) raw
-  
-  -- Send the portfolio
   liftIO $ sendPortfolio conf parsed
 
   -- Write just OK, it is never actually read.
@@ -78,9 +76,10 @@ sendPortfolio conf pf = lulzCouch conf $ mapM_ maybeUpdate pf
   where
     maybeUpdate (doc,json) = do
       ret <- newNamedDoc dbName doc json
-      -- This may fail but it's not very probable. Conflight requires
-      -- two simultaneous portofolio updates when it's ok anyway to
-      -- ignore the other anyway.
+      -- Check if the document is already there. Resending it with
+      -- getAndUpdate in case the numbers have changed from previous
+      -- sync. Even the update may fail but it happens only if a user
+      -- is simultaneously syncing the very same portfolio.
       case ret of
         Left _ -> getAndUpdateDoc dbName doc (return . (const json))
         Right _ -> return Nothing -- Succeeded in newNamedDoc

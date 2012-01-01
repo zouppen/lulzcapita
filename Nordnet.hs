@@ -62,9 +62,9 @@ record PortfolioInfo{..} extra = do
         -- Extra stocks (Nordnet welcome offer, bonus issue)
         "JÄTTÖ SIIRTO"         -> ("sale",True,Just ("count",showJSON amount))
         "RAHASTOANTI AP JÄTTÖ" -> ("sale",True,Just ("count",showJSON amount))
-        -- Transactions related to cancellation of dividents, etc.
+        -- Transactions related to cancellation of dividents, taxes, etc.
         "OSINGON PERUUTUS"     -> ("income",True,Nothing)
-        "PER ULK KUPONKIVERO"  -> ("income",True,Nothing)
+        "PER ULK KUPONKIVERO"  -> ("tax",True,Nothing)
         -- Unknown events are logged, too.
         a -> ("unknown",False,Just ("unsupported",showJSON a))
         

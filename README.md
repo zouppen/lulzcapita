@@ -49,7 +49,7 @@ taxated.
 
 ### sync_info
 
-* <tt>\_id</tt>: Portfolio ID, hasked with bank ID.
+* <tt>\_id</tt>: Portfolio ID, hashed with bank ID.
 * <tt>date</tt>: Date of last successful sync.
 
 ## Server configuration
