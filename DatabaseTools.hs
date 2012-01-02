@@ -8,8 +8,8 @@ import Text.JSON
 import Common
 
 -- |Shortcut for running something on Lulzcapita database.
-lulzCouch :: ConfigParser -> CouchMonad a -> IO a
-lulzCouch conf act = runCouchDBURI (peek conf "secret.db_uri") act
+lulzCouch :: (MonadIO m) => ConfigParser -> CouchMonad a -> m a
+lulzCouch conf act = liftIO $ runCouchDBURI (peek conf "secret.db_uri") act
 
 -- |Digs portfolio information from FastCGI request.
 getPortfolioHeaders :: ConfigParser -> CGI PortfolioInfo

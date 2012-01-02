@@ -1,9 +1,14 @@
+{-# LANGUAGE RecordWildCards #-}
+
+-- |Functions related to portfolio uploading. Only "generic" tools
+-- here. Bank specific parsers are in separate modules.
 module PortfolioSink where
 
 import Control.Monad (liftM)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString as BS
 import Data.ConfigFile (ConfigParser)
+import Data.DateTime (getCurrentTime, toSeconds)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
 import qualified Data.Text.IO as TI
@@ -25,9 +30,6 @@ portfolioSink conf = do
   info <- getPortfolioHeaders conf
   -- Making Text strict to improve performance.
   raw <- liftM (decodeUtf8 . BS.concat . B.toChunks) getBodyFPS
-  -- Get user ID.
-  userID <- liftIO $ lulzCouch conf $ 
-            getUserId info `orFail` "Your portfolio ID is not registered"
 
   -- Get temporary file and write the portfolio on disk for debugging.
   f <- liftIO $ do 
@@ -41,10 +43,16 @@ portfolioSink conf = do
                                                ," format ",format info
                                                ," file ",f,"\n"]
   
+  -- Get user ID and write synchronization info.
+  (userID,syncID) <- lulzCouch conf $ do
+      userID <- getUserId info `orFail` "Your portfolio ID is not registered"
+      syncID <- putSyncInfo info f
+      return (userID,syncID)
+
   -- Add some useful information to the documents.
   let extra = [ field "table" "portfolio"  -- Type of content
               , field "user" userID        -- Portfolio ID hash
-              , field "original" f         -- Original file
+              , field "sync" syncID        -- Synchronization ID
               ]
 
   -- Parser chooser.
@@ -84,3 +92,15 @@ sendPortfolio conf pf = lulzCouch conf $ mapM_ maybeUpdate pf
         Left _ -> getAndUpdateDoc dbName doc (return . (const json))
         Right _ -> return Nothing -- Succeeded in newNamedDoc
     dbName = (peek conf "location.db")
+
+-- |Puts synchronization log to the database.
+putSyncInfo :: PortfolioInfo -> FilePath -> CouchMonad Doc
+putSyncInfo PortfolioInfo{..} logF = do
+  time <- liftIO getCurrentTime
+  (doc,_) <- newDoc (peek conf "location.db") $ toJSObject
+    [ field "table" "sync"
+    , field "portfolio" $ hash []
+    , field "time" $ toSeconds time
+    , field "log" logF
+    ]
+  return doc
