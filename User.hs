@@ -20,7 +20,7 @@ userInfo conf = do
 -- |Extracts the information from databases. The portfolio parameter
 -- should be hashed.
 readDB :: PortfolioInfo -> CouchMonad (JSObject JSValue)
-readDB PortfolioInfo{..} = do
+readDB info@PortfolioInfo{..} = do
   -- Should return only one row.
   timeRaw <- queryView (peek conf "location.db")
              (doc "couchapp") (doc "last_sync")
@@ -28,33 +28,27 @@ readDB PortfolioInfo{..} = do
              ,("group",showJSON True)
              ]
 
-  -- If there is some data, return it, otherwise the default
+  -- If there is sync date, return it, otherwise the default.
   let (isFirst,timestamp) = case timeRaw of
         [(_,x)] -> (False,x)
-        []      -> (True,showJSON "2000-01-01")  -- Start of the time.
+        []      -> (True,showJSON (946728000::Int))  -- Start of the time, Y2K.
 
   -- Get nick of that user.
-  userRaw <- queryView (peek conf "location.db")
-             (doc "couchapp") (doc "portfolio_user")
-             [("key",jsonHash)]
-
-  -- If there is some data, return it, otherwise the default.
-  userDoc <- case userRaw :: [(Doc,JSValue)] of
-    [(doc,_)] -> do
-      logCGI $ "User " ++ show doc ++ " requests info"
-      getDoc (peek conf "location.db") doc
-    [] -> do
+  mbUser <- getUserId info
+  userDoc <- case mbUser of
+    Just user -> do
+      logCGI $ "User " ++ show user ++ " requests info"
+      -- Now getting the actual user doc. The pattern matching is
+      -- considered "safe" because otherwise database is inconsistent.
+      Just (_,_,a) <- getDoc (peek conf "location.db") user
+      return a
+    Nothing -> do
       logCGI $ "Unknown user looking for portfolio " ++ hash []
-      return Nothing
-    
-  -- Now get the doc name, putting it to returned value.
-  let userjson = case userDoc of
-        Just (_,_,a) -> a
-        Nothing      -> JSNull
+      return JSNull
 
   return $ toJSObject [("last",timestamp)
                       ,("is_first",showJSON isFirst)
-                      ,("user",userjson)
+                      ,("user",userDoc)
                       ]
 
   where jsonHash = showJSON $ hash []

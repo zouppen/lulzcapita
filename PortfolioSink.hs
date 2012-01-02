@@ -64,6 +64,7 @@ portfolioSink conf = do
   liftIO $ sendPortfolio conf parsed
 
   -- Write just OK, it is never actually read.
+  logCGI $ "User " ++ show userID ++ " synchronization " ++ show syncID
   output "ok\r\n"
 
 field :: (JSON a) => String -> a -> (String,JSValue)
