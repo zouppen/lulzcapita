@@ -10,14 +10,14 @@ import Control.Monad (liftM)
 import Text.JSON
 import Common
 
-nordnet :: PortfolioInfo -> ExtraFields -> Parser [Record]
-nordnet info extra = do
+nordnet :: PortfolioInfo -> Parser [Transaction]
+nordnet info = do
   -- Skipping head
   skipMany newline
   string "ID"
   skipLine
   -- The thing
-  records <- many $ record info extra
+  records <- many $ record info
   -- Skip tail
   skipMany newline
   eof
@@ -26,8 +26,8 @@ nordnet info extra = do
 
 -- |Parses a record. Comments are in Finnish because the CSV from
 -- Nordnet has Finnish comments.
-record :: PortfolioInfo -> ExtraFields -> Parser Record
-record PortfolioInfo{..} extra = do
+record :: PortfolioInfo -> Parser Transaction
+record PortfolioInfo{..} = do
   -- Stop if the line is empty.
   lookAhead $ satisfy (/= '\n')
   
@@ -37,8 +37,8 @@ record PortfolioInfo{..} extra = do
   dateStr <- field      -- Kauppapäivä
   field                 -- Maksupäivä
   taStr <- field        -- Tapahtumatyyppi
-  field                 -- Arvopaperi
-  field                 -- Instrumenttityyppi
+  symbol <- field       -- Arvopaperi
+  stockType <- field    -- Instrumenttityyppi
   isin <- field         -- ISIN
   amount <- numberField -- Määrä
   field                 -- Kurssi
@@ -68,13 +68,18 @@ record PortfolioInfo{..} extra = do
         -- Unknown events are logged, too.
         a -> ("unknown",False,Just ("unsupported",showJSON a))
         
-  return ((doc $ hash [id]),toJSObject $ extra ++ catMaybes
-    [Just ("date",showJSON dateStr)
-    ,Just ("type",showJSON typ)
-    ,if showIsin then Just ("isin",showJSON isin) else Nothing
-    ,Just ("sum",showJSON euros)
-    ,ta
-    ])
+  let result = (hash [id],
+                catMaybes [Just ("date",showJSON dateStr)
+                          ,Just ("type",showJSON typ)
+                          ,if showIsin then Just ("isin",showJSON isin) else Nothing
+                          ,Just ("sum",showJSON euros)
+                          ,ta
+                          ])
+  
+  let rawBlob = toJSObject [("symbol", symbol),("type", stockType)]
+  let stockInfo = ("isin_"++isin,[("raw",showJSON rawBlob)])
+
+  return $ Transaction result stockInfo
 
 obj k v = (k,toJSObject v)
 

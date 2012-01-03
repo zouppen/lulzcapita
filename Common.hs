@@ -32,8 +32,12 @@ data PortfolioInfo = PortfolioInfo { pId    :: String
                                    , conf   :: ConfigParser
                                    }
 
-type Record = (Doc,JSObject JSValue)
-type ExtraFields = [(String,JSValue)]
+data Transaction = Transaction { securityAction :: Record
+                               , securityInfo   :: Record
+                               }
+
+type Record = (String,Fields)
+type Fields = [(String,JSValue)]
 
 -- |Shorthand for failing when something is not defined.
 orFail :: (Monad m) => m (Maybe a) -> String -> m a
