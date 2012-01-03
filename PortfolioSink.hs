@@ -60,8 +60,11 @@ portfolioSink conf = do
        `orFail` "Portfolio type is not supported"
 
   -- Parse and send the portfolio.
-  parsed <- liftIO $ parsePortfolio (p info extra) raw
-  liftIO $ sendPortfolio conf parsed
+  xs <- liftIO $ parsePortfolio (p info) raw
+  let actions = map ((recordToJson extra) . securityAction) xs
+  let infos = map ((recordToJson [field "table" "security"]) . securityInfo) xs
+  liftIO $ sendPortfolio conf actions
+  liftIO $ sendInfo conf infos
 
   -- Write just OK, it is never actually read.
   logCGI $ "User " ++ show userID ++ " synchronization " ++ show syncID
@@ -74,13 +77,13 @@ field k v = (k,showJSON v)
 parsers = [("nordnet",nordnet)]
 
 -- |Just parses and fails monadically
-parsePortfolio :: (Monad m) => Parser [Record] -> Text -> m [Record]
+parsePortfolio :: (Monad m) => Parser [Transaction] -> Text -> m [Transaction]
 parsePortfolio p raw =
   case parse p "portfolio" raw of
     Left e -> fail $ "Parsing of portfolio failed in " ++ show (errorPos e)
     Right a -> return a
 
-sendPortfolio :: ConfigParser -> [Record] -> IO ()
+sendPortfolio :: ConfigParser -> [(Doc,JSObject JSValue)] -> IO ()
 sendPortfolio conf pf = lulzCouch conf $ mapM_ maybeUpdate pf
   where
     maybeUpdate (doc,json) = do
@@ -94,6 +97,13 @@ sendPortfolio conf pf = lulzCouch conf $ mapM_ maybeUpdate pf
         Right _ -> return Nothing -- Succeeded in newNamedDoc
     dbName = (peek conf "location.db")
 
+-- |Sends simple information about securities information if there is
+-- |no such information yet. Ignore if there is one yet.
+sendInfo :: ConfigParser -> [(Doc,JSObject JSValue)] -> IO ()
+sendInfo conf infos = lulzCouch conf $ mapM_ tryWrite infos
+  where tryWrite (doc,json) = newNamedDoc dbName doc json
+        dbName = (peek conf "location.db")
+
 -- |Puts synchronization log to the database.
 putSyncInfo :: PortfolioInfo -> FilePath -> CouchMonad Doc
 putSyncInfo PortfolioInfo{..} logF = do
@@ -105,3 +115,7 @@ putSyncInfo PortfolioInfo{..} logF = do
     , field "log" logF
     ]
   return doc
+
+-- |Adds extra fields and converts object to real JSON value.
+recordToJson :: Fields -> Record -> (Doc,JSObject JSValue)
+recordToJson extra (key,fields) = (doc key,toJSObject (fields++extra))
