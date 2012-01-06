@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
-module Common where
+module LulzCapita.Common where
 
 import Data.ByteString.Lazy.Char8 (ByteString,intercalate,pack,singleton)
 import Data.ConfigFile (Get_C, ConfigParser, SectionSpec, OptionSpec, get)

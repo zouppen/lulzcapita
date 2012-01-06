@@ -6,9 +6,9 @@ import Data.Either.Utils
 import Data.List (stripPrefix)
 import Network.FastCGI
 import Network.URI
-import Common
-import PortfolioSink
-import User
+import LulzCapita.Common
+import LulzCapita.PortfolioSink
+import LulzCapita.User
 
 main = do
   -- TODO Add some config file validation and allow specifying config

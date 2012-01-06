@@ -2,14 +2,14 @@
 
 -- |This dumps user info for Greasemonkey script. This provides very
 -- much "Nordnet only" data at the moment.
-module User where
+module LulzCapita.User where
 
 import Data.ConfigFile (ConfigParser)
 import Database.CouchDB
 import Network.FastCGI
 import Text.JSON
-import Common
-import DatabaseTools
+import LulzCapita.Common
+import LulzCapita.DatabaseTools
 
 userInfo :: ConfigParser -> CGI CGIResult
 userInfo conf = do

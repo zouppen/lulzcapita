@@ -2,7 +2,7 @@
 
 -- |Functions related to portfolio uploading. Only "generic" tools
 -- here. Bank specific parsers are in separate modules.
-module PortfolioSink where
+module LulzCapita.PortfolioSink where
 
 import Control.Monad (liftM)
 import qualified Data.ByteString.Lazy as B
@@ -18,9 +18,9 @@ import System.IO
 import Text.JSON
 import Text.Parsec
 import Text.Parsec.Text
-import Common
-import DatabaseTools
-import Nordnet
+import LulzCapita.Common
+import LulzCapita.DatabaseTools
+import LulzCapita.Bank.Nordnet
 
 -- |Does the actual parsing and pushing of results. Fails when
 -- something goes wrong.

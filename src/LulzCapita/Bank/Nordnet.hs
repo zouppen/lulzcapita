@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
-module Nordnet (nordnet) where
+module LulzCapita.Bank.Nordnet (nordnet) where
 
 import Text.Parsec.Text
 import Text.Parsec
@@ -8,7 +8,7 @@ import Data.Maybe (catMaybes)
 import Database.CouchDB
 import Control.Monad (liftM)
 import Text.JSON
-import Common
+import LulzCapita.Common
 
 nordnet :: PortfolioInfo -> Parser [Transaction]
 nordnet info = do

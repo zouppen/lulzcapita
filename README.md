@@ -146,7 +146,15 @@ TODO cabal file and installation script. Meanwhile:
 ### Ubuntu/Debian packages
 
     sudo apt-get install spawn-fcgi haskell-platform \
-    libghc6-fastcgi-dev libghc6-datetime-dev
+    libghc6-fastcgi-dev libghc6-datetime-dev libghc6-sha-dev \
+    libghc6-configfile-dev
+
+### Patched CouchDB
+
+Get branch <tt>httpauth</tt> from
+https://github.com/zouppen/haskell-couchdb/tree/httpauth
+
+Install with <tt>cabal install</tt>
 
 ### Compiling
 

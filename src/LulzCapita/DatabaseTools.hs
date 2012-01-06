@@ -1,11 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
-module DatabaseTools where
+module LulzCapita.DatabaseTools where
 
 import Data.ConfigFile (ConfigParser)
 import Database.CouchDB
 import Network.FastCGI
 import Text.JSON
-import Common
+import LulzCapita.Common
 
 -- |Shortcut for running something on Lulzcapita database.
 lulzCouch :: (MonadIO m) => ConfigParser -> CouchMonad a -> m a

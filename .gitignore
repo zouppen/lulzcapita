@@ -1,6 +1,5 @@
 *.hi
 *.o
 *~
-/sink
-/sink-arm
 /sink.conf
+/dist
