@@ -165,24 +165,39 @@ other package manager:
     libghc-fastcgi-dev
     libghc-utf8-string-dev
     libghc-datetime-dev
-    libghc-mtl-dev
-    libghc-http-dev
     couchapp
     couchdb
     spawn-fcgi
 
-Libraries <tt>mtl</tt> and <tt>http</tt> are listed because they are
-dependencies of CouchDB library. You can install <tt>couchapp</tt> on
-any computer and <tt>couchdb</tt> on your database server. Of course
-they may be the very same computer.
+Also, for satisfying the dependencies of *openid* and *couchdb*
+library, install:
+
+    libghc-mtl-dev
+    libghc-http-dev
+    libghc-xml-dev
+    libghc-text-dev
+
+You can install *couchapp* on any computer and *couchdb* on your
+database server. Of course they may be the very same computer.
 
 ### Patched CouchDB library
 
-This is required before arjunguha merges my pull request.
+This is required before *arjunguha* merges my pull request.
 
     git clone git://github.com/zouppen/haskell-couchdb.git --branch httpauth
     cd haskell-couchdb
     cabal install
+
+### Patched OpenID library
+
+This is required before *elliottt* updates *openid* cabal file.
+
+    git clone git://github.com/zouppen/hsopenid.git --branch relaxed
+    cd hsopenid
+    cabal install
+
+Cabal will install *HsOpenSSL* and *monadLib* from Hackage, so it may
+ask you to run <tt>cabal update</tt> before installing.
 
 ### LulzCapita
 

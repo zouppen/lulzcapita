@@ -18,5 +18,4 @@ Executable lulzcapita
   Hs-Source-Dirs:    src
   Main-Is:           Main.hs
   Build-Depends:
-    base, parsec >= 3, json, network, CouchDB >= 0.11.1, MissingH, SHA, ConfigFile, bytestring, fastcgi, utf8-string, datetime
-
+    base, parsec >= 3, json, network, CouchDB >= 0.11.1, MissingH, SHA, ConfigFile, bytestring, fastcgi, utf8-string, datetime, openid >=0.2.0.1
