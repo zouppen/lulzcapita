@@ -173,7 +173,7 @@ other package manager:
 
 Libraries <tt>mtl</tt> and <tt>http</tt> are listed because they are
 dependencies of CouchDB library. You can install <tt>couchapp</tt> on
-any computer and <tt>couchdb<tt> on your database server. Of course
+any computer and <tt>couchdb</tt> on your database server. Of course
 they may be the very same computer.
 
 ### Patched CouchDB library
@@ -186,7 +186,7 @@ This is required before arjunguha merges my pull request.
 
 ### LulzCapita
 
-    git clone git@github.com:zouppen/lulzcapita.git
+    git clone git://github.com/zouppen/lulzcapita.git
     cd lulzcapita
     cabal install
 

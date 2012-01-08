@@ -14,3 +14,5 @@ salt = change me
 db = lulzcapita
 # Location of this service in virtual host.
 base_url = /bin/
+# Log directory
+log_dir = portfolio_log

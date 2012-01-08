@@ -28,15 +28,13 @@ portfolioSink conf = do
 
   -- Get temporary file and write the portfolio on disk for debugging.
   f <- liftIO $ do 
-    (f,h) <- openBinaryTempFile "portfolio_log" ".csv"
+    (f,h) <- openBinaryTempFile (peek conf "location.log_dir") ".csv"
     B.hPutStr h raw
     hClose h
     return f
 
-  -- Dummy access log.
-  liftIO $ appendFile "portfolio.log" $ concat ["id ",pId info
-                                               ," format ",format info
-                                               ," file ",f,"\n"]
+  logCGI $ "Synchronization: Portfolio " ++ pId info ++ "@" ++
+    format info ++ ", contents: " ++ f
   
   -- Get user ID and write synchronization info.
   (userID,syncID) <- lulzCouch conf $ do
@@ -62,7 +60,7 @@ portfolioSink conf = do
   liftIO $ sendInfo conf infos
 
   -- Write just OK, it is never actually read.
-  logCGI $ "User " ++ show userID ++ " synchronization " ++ show syncID
+  logCGI $ "Synchronization: User " ++ show userID ++ ", ID: " ++ show syncID
   output "ok\r\n"
 
 field :: (JSON a) => String -> a -> (String,JSValue)

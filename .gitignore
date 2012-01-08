@@ -1,5 +1,5 @@
 *.hi
 *.o
 *~
-/sink.conf
+/lulzcapita.conf
 /dist
