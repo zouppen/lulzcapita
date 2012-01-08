@@ -4,20 +4,15 @@
 -- here. Bank specific parsers are in separate modules.
 module LulzCapita.PortfolioSink where
 
-import Control.Monad (liftM)
 import qualified Data.ByteString.Lazy as B
-import qualified Data.ByteString as BS
 import Data.ConfigFile (ConfigParser)
 import Data.DateTime (getCurrentTime, toSeconds)
-import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8)
-import qualified Data.Text.IO as TI
 import Database.CouchDB
 import Network.FastCGI
 import System.IO
 import Text.JSON
 import Text.Parsec
-import Text.Parsec.Text
+import LulzCapita.Internal.UTF8Parsec
 import LulzCapita.Common
 import LulzCapita.DatabaseTools
 import LulzCapita.Bank.Nordnet
@@ -29,12 +24,12 @@ portfolioSink conf = do
   -- Gets request data. 
   info <- getPortfolioHeaders conf
   -- Making Text strict to improve performance.
-  raw <- liftM (decodeUtf8 . BS.concat . B.toChunks) getBodyFPS
+  raw <- getBodyFPS
 
   -- Get temporary file and write the portfolio on disk for debugging.
   f <- liftIO $ do 
     (f,h) <- openBinaryTempFile "portfolio_log" ".csv"
-    TI.hPutStr h raw
+    B.hPutStr h raw
     hClose h
     return f
 
@@ -60,7 +55,7 @@ portfolioSink conf = do
        `orFail` "Portfolio type is not supported"
 
   -- Parse and send the portfolio.
-  xs <- liftIO $ parsePortfolio (p info) raw
+  xs <- liftIO $ parsePortfolio (p info) (UTF8String raw)
   let actions = map ((recordToJson extra) . securityAction) xs
   let infos = map ((recordToJson [field "table" "security"]) . securityInfo) xs
   liftIO $ sendPortfolio conf actions
@@ -77,7 +72,7 @@ field k v = (k,showJSON v)
 parsers = [("nordnet",nordnet)]
 
 -- |Just parses and fails monadically
-parsePortfolio :: (Monad m) => Parser [Transaction] -> Text -> m [Transaction]
+parsePortfolio :: (Monad m) => Parser [Transaction] -> UTF8String -> m [Transaction]
 parsePortfolio p raw =
   case parse p "portfolio" raw of
     Left e -> fail $ "Parsing of portfolio failed in " ++ show (errorPos e)

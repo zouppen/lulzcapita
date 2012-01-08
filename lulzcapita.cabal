@@ -7,12 +7,16 @@ license:             GPL-3
 license-file:        LICENSE
 author:              Joel Lehtonen
 maintainer:          joel.lehtonen@iki.fi
-build-depends:       base
 build-type:          Simple
 cabal-version:       >= 1.2
+homepage:            http://capita.lulz.fi
+source-repository head
+  type:                git
+  location:            git://github.com/zouppen/lulzcapita.git
 
 Executable lulzcapita
   Hs-Source-Dirs:    src
   Main-Is:           Main.hs
   Build-Depends:
-    parsec >= 3.1.2, network, json, CouchDB >= 0.11.1
+    base, parsec >= 3, json, network, CouchDB >= 0.11.1, MissingH, SHA, ConfigFile, bytestring, fastcgi, utf8-string, datetime
+

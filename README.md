@@ -137,46 +137,80 @@ TODO nginx instructions
 
 ## Installation
 
-These instructions are for Debian and Ubuntu. Feel free to send a pull
-request containing installation instructions for other operating
-systems.
+You have 2 sane options for building this. To build with operating
+system libraries you need a rather new operating system like Debian
+Wheezy or Ubuntu Oneiric. If you have older server, you should use
+cabal-dev because the dependencies are quite messy.
 
-TODO cabal file and installation script. Meanwhile:
+These instructions are for Ubuntu. If you have other OS and the listed
+packages are not available then you are a bit of your own. Try getting
+Haskell Platform, CouchDB, CouchApp and Cabal-Dev and install patched
+version of CouchDB library and of course, this app.  Feel free to send
+a pull request containing installation instructions for other
+operating systems.
 
 ### Ubuntu/Debian packages
 
-    sudo apt-get install spawn-fcgi haskell-platform \
-    libghc6-fastcgi-dev libghc6-datetime-dev libghc6-sha-dev \
-    libghc6-configfile-dev
+Install the following packages with <tt>sudo apt-get install</tt> or
+other package manager:
 
-### Patched CouchDB
+    cabal-install
+    ghc
+    libghc-parsec3-dev
+    libghc-json-dev
+    libghc-network-dev
+    libghc-missingh-dev
+    libghc-sha-dev
+    libghc-configfile-dev
+    libghc-fastcgi-dev
+    libghc-utf8-string-dev
+    libghc-datetime-dev
+    libghc-mtl-dev
+    libghc-http-dev
+    couchapp
+    couchdb
+    spawn-fcgi
 
-Get branch <tt>httpauth</tt> from
-https://github.com/zouppen/haskell-couchdb/tree/httpauth
+Libraries <tt>mtl</tt> and <tt>http</tt> are listed because they are
+dependencies of CouchDB library. You can install <tt>couchapp</tt> on
+any computer and <tt>couchdb<tt> on your database server. Of course
+they may be the very same computer.
 
-Install with <tt>cabal install</tt>
+### Patched CouchDB library
 
-### Compiling
+This is required before arjunguha merges my pull request.
 
-To compile the binary:
+    git clone git://github.com/zouppen/haskell-couchdb.git --branch httpauth
+    cd haskell-couchdb
+    cabal install
 
-    ghc --make -o sink Sink.hs
+### LulzCapita
+
+    git clone git@github.com:zouppen/lulzcapita.git
+    cd lulzcapita
+    cabal install
+
+After these commands, <tt>lulzcapita</tt> should be available on your
+path, if not, then at <tt>~/.cabal/bin/lulzcapita</tt>.
 
 ### Couchapp
 
-Couchapp is required to install the couchapp part of LulzCapita.
-
-To install the Couchapp tool itself:
-
-    sudo pip install couchapp
-
-Then install our Couchapp:
+Our Couchapp contains some views of LulzCapita. Install them with
+<tt>couchapp</tt>. On this source directory, run:
 
     cd couchapp
-    couchapp push
+    couchapp push URL
+
+You may omit URL if you are running CouchDB at localhost in admin
+party mode. Please keep in mind that the database will receive
+personal information and you should secure it. For more information,
+please get a copy of [CouchDB: The Definitive
+Guide](http://guide.couchdb.org/editions/1/en/index.html)
 
 ## Running
 
 To run interactively as a FastCGI on port 9001.
 
-    spawn-fcgi -n -p 9001 -- ./sink
+    spawn-fcgi -n -p 9001 -- lulzcapita
+
+To run in background you may omit the <tt>-n</tt> flag.
